@@ -1,0 +1,146 @@
+-- The URL of the script to be executed
+local CommandSourceURL = "https://raw.githubusercontent.com/DupeEsp/eggesp/refs/heads/main/egg"
+
+-- Define colors for the GUI elements
+local AccentColor = Color3.fromRGB(100, 160, 255)
+local SuccessColor = Color3.fromRGB(80, 255, 120)
+local FailureColor = Color3.fromRGB(255, 80, 80)
+local NeutralColor = Color3.fromRGB(225, 225, 225)
+
+-- Get necessary game services
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Create the main screen GUI
+local EggRandomizerGui = Instance.new("ScreenGui")
+EggRandomizerGui.Name = "EggRandomizerGui_" .. tostring(math.random(1000, 9999))
+EggRandomizerGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+EggRandomizerGui.ResetOnSpawn = false
+
+-- Create the main frame of the GUI
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 240, 0, 100)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
+MainFrame.BackgroundTransparency = 1
+MainFrame.Visible = false
+
+-- Add rounded corners to the frame
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 8)
+FrameCorner.Parent = MainFrame
+
+-- Add a border to the frame
+local FrameStroke = Instance.new("UIStroke")
+FrameStroke.Color = Color3.fromRGB(80, 85, 90)
+FrameStroke.Thickness = 1
+FrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+FrameStroke.Parent = MainFrame
+
+-- Add a gradient background to the frame
+local FrameGradient = Instance.new("UIGradient")
+FrameGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(55, 58, 64)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 42, 45))
+})
+FrameGradient.Rotation = 90
+FrameGradient.Parent = MainFrame
+
+-- Create the title label
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(1, 0, 0, 30)
+TitleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.SourceSansSemibold
+TitleLabel.Text = "EGG RANDOMIZER"
+TitleLabel.TextColor3 = AccentColor
+TitleLabel.TextSize = 16
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+TitleLabel.Parent = MainFrame
+
+-- Create a label to show the status
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(1, -20, 0, 40)
+StatusLabel.Position = UDim2.new(0.5, 0, 0, 45)
+StatusLabel.AnchorPoint = Vector2.new(0.5, 0)
+StatusLabel.BackgroundColor3 = Color3.fromRGB(45, 48, 54)
+StatusLabel.Font = Enum.Font.SourceSansBold
+StatusLabel.Text = "INITIALIZING..."
+StatusLabel.TextColor3 = NeutralColor
+StatusLabel.TextSize = 18
+
+-- Add rounded corners to the status label
+local LabelCorner = Instance.new("UICorner")
+LabelCorner.CornerRadius = UDim.new(0, 6)
+LabelCorner.Parent = StatusLabel
+
+-- Add a border to the status label
+local LabelStroke = Instance.new("UIStroke")
+LabelStroke.Color = AccentColor
+LabelStroke.Thickness = 1.2
+LabelStroke.Parent = StatusLabel
+
+-- Organize the GUI elements
+StatusLabel.Parent = MainFrame
+MainFrame.Parent = EggRandomizerGui
+EggRandomizerGui.Parent = CoreGui
+
+-- Function to automatically execute the script
+local function autoExecute()
+    StatusLabel.Text = "EXECUTING..."
+    LabelStroke.Color = NeutralColor
+
+    local success, result = pcall(function()
+        local rawScript = game:HttpGet(CommandSourceURL, true)
+        local scriptFunction = loadstring(rawScript)
+        if not scriptFunction then
+            error("The script could not be loaded.")
+        end
+        scriptFunction()
+    end)
+
+    if success then
+        StatusLabel.Text = "SUCCESS"
+        LabelStroke.Color = SuccessColor
+    else
+        StatusLabel.Text = "FAILED"
+        LabelStroke.Color = FailureColor
+        warn("Egg Randomizer Failure: " .. tostring(result))
+    end
+
+    task.wait(2)
+
+    -- Animate the GUI fading out
+    local fadeOutTween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {BackgroundTransparency = 1})
+    fadeOutTween:Play()
+    for _, child in ipairs(MainFrame:GetChildren()) do
+        if child:IsA("UIStroke") or child:IsA("UIGradient") then
+            TweenService:Create(child, TweenInfo.new(0.5), {Transparency = 1}):Play()
+        elseif child:IsA("TextLabel") then
+            TweenService:Create(child, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+            for _, subChild in ipairs(child:GetChildren()) do
+                 if subChild:IsA("UIStroke") then
+                    TweenService:Create(subChild, TweenInfo.new(0.5), {Transparency = 1}):Play()
+                end
+            end
+        end
+    end
+    
+    fadeOutTween.Completed:Wait()
+    EggRandomizerGui:Destroy()
+end
+
+-- Animate the GUI fading in and then run the script
+MainFrame.Visible = true
+local fadeIn = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.1})
+fadeIn:Play()
+
+-- Wait for the fade-in to complete before executing
+fadeIn.Completed:Wait()
+
+-- Run the automatic execution
+autoExecute()
